@@ -19,14 +19,17 @@ const summaryRoutes = require('./src/routes/summary.routes');
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:3000')
-  .split(',')
-  .map((o) => o.trim())
-  .concat(['http://localhost:3000']);
+const allowedOrigins = [
+  'http://localhost:3000',
+  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((o) => o.trim()) : []),
+];
 
 app.use(cors({
   origin: (origin, callback) => {
+    // allow server-to-server requests (no origin) and listed origins
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    // also allow any vercel.app preview URL for this project
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
