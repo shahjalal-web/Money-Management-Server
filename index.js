@@ -19,10 +19,10 @@ const summaryRoutes = require('./src/routes/summary.routes');
 
 const app = express();
 
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:3000',
-  'http://localhost:3000',
-];
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:3000')
+  .split(',')
+  .map((o) => o.trim())
+  .concat(['http://localhost:3000']);
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -34,7 +34,16 @@ app.use(cors({
 
 app.use(express.json());
 
-// Lazy DB init — runs once per serverless cold start, reuses on warm starts
+// Health check — no DB required, always responds
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Money Management API is running', timestamp: new Date().toISOString() });
+});
+
+app.get('/api', (req, res) => {
+  res.json({ success: true, message: 'Money Management API is running', timestamp: new Date().toISOString() });
+});
+
+// Lazy DB init — runs once per cold start, reuses on warm starts
 let dbReady = false;
 app.use(async (req, res, next) => {
   if (dbReady) return next();
@@ -50,12 +59,9 @@ app.use(async (req, res, next) => {
     dbReady = true;
     next();
   } catch (err) {
-    next(err);
+    console.error('DB init failed:', err.message);
+    res.status(503).json({ success: false, message: 'Database connection failed. Check env vars and MongoDB Atlas IP whitelist.' });
   }
-});
-
-app.get('/api', (req, res) => {
-  res.json({ success: true, message: 'Money Management API is running' });
 });
 
 app.use('/api/auth', authRoutes);
