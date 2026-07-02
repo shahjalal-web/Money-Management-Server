@@ -5,7 +5,13 @@ let client = null;
 
 async function connectDB() {
   if (db) return db;
-  client = new MongoClient(process.env.MONGODB_URI);
+  client = new MongoClient(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 8000,
+    connectTimeoutMS: 8000,
+    socketTimeoutMS: 20000,
+    maxPoolSize: 10,
+    minPoolSize: 0,
+  });
   await client.connect();
   db = client.db();
   console.log('MongoDB connected successfully');
